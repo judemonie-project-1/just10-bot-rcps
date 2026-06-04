@@ -1,3 +1,4 @@
+// build:1780556975090
 'use strict';
 var Telegraf=require('telegraf').Telegraf;
 var express=require('express');
@@ -17,13 +18,13 @@ var CA='0xea65ee463ce165442323769d07c4e07ffa1b1ea9';
 var TWITTER='https://x.com/just_ten_dollar';
 var TG='https://t.me/just_buy_10_dollars';
 var WEBSITE='https://justbuy10.xyz/';
-var IS_CTO=true;
+var IS_CTO=false;
 var RESPONSE_MODE='focused';
 var bot=new Telegraf(BOT_TOKEN);
 var app=express();app.use(express.json());
 var _SF='/tmp/state.json';
 var caUnlocked=true,groupChatId=null,silTimer=null;
-var SIL_DELAY=3600000;
+var SIL_DELAY=0;
 function loadState(){try{var s=JSON.parse(fs.readFileSync(_SF,'utf8'));caUnlocked=!!s.u;groupChatId=s.g||null;}catch(_){}}
 function saveState(){try{fs.writeFileSync(_SF,JSON.stringify({u:caUnlocked,g:groupChatId}));}catch(_){}}
 loadState();
@@ -47,7 +48,7 @@ function hasFud(t){var l=t.toLowerCase();return FUD.some(function(w){return l.in
 var NOT_LIVE=['$JUST10 hasn\u2019t launched yet. CA coming soon.','Not yet. Stay ready.','CA drops soon. Hold tight.'];
 var CTO_REPLIES=['$JUST10 is a CTO. Original dev gone. Community owns and runs this completely. No dev to rug.','CTO project. Dev walked away. Community stepped up and owns $JUST10 now. That is the strength.','No dev here. $JUST10 is 100% community-owned. Original dev left. Community drives this forward.'];
 function sysPrompt(){
-  return 'You are the community bot for $JUST10, a BNB Smart Chain (BSC) meme token.\nToken: $JUST10 | Chain: BNB Smart Chain (BSC)\nSupply: 1000000000\nTax: 2% buy / 3% sell\nContract: PENDING | LP: NOT LOCKED\nDEV: CTO. Original dev gone. Community owns $JUST10 completely. Say this clearly when asked.'+(TWITTER?'\nTwitter: '+TWITTER:'')+'\nNarrative: '+"Millions spend $10 daily. One $10 could change your life."+'\nPersonality: Confident, sharp, crypto-native. Talk like a seasoned degen who believes in the project. Direct and bold.\nRULES: 2-4 lines max. Natural and professional. Never share TG group link. Never repeat reply. If hype/casual/no question: reply IGNORE exactly.';
+  return 'You are the community bot for $JUST10, a BNB Smart Chain (BSC) meme token.\nToken: $JUST10 | Chain: BNB Smart Chain (BSC)\nSupply: 1000000000\nTax: 2% buy / 3% sell\nContract: RENOUNCED | LP: LOCKED\nDEV: Active, building, present. Never imply dev left.'+(TWITTER?'\nTwitter: '+TWITTER:'')+'\nNarrative: '+"Millions spend $10 daily. One $10 could change your life."+'\nPersonality: Confident, sharp, crypto-native. Talk like a seasoned degen who believes in the project. Direct and bold.\nRULES: 2-4 lines max. Natural and professional. Never share TG group link. Never repeat reply. If hype/casual/no question: reply IGNORE exactly.';
 }
 async function ask(msg){
   if(!_groqPool.length)throw new Error('No AI key configured. Add one with /addgroq in factory.');
@@ -117,14 +118,14 @@ bot.command('x',async function(ctx){return sendWithTracker(xMsg,ctx.chat.id,'Fol
 bot.command('twitter',async function(ctx){return sendWithTracker(xMsg,ctx.chat.id,'Follow $JUST10 on X',{reply_markup:{inline_keyboard:[[{text:'Follow on X',url:TWITTER}]]}});});
 bot.command('socials',function(ctx){return ctx.reply('<a href=\'https://dexscreener.com/bsc/0xea65ee463ce165442323769d07c4e07ffa1b1ea9\'>Chart</a> | <a href=\'https://pancakeswap.finance/swap?outputCurrency=0xea65ee463ce165442323769d07c4e07ffa1b1ea9\'>PancakeSwap</a>'+(TWITTER?' | <a href=\''+TWITTER+'\'>Twitter</a>':'')+(WEBSITE?' | <a href=\''+WEBSITE+'\'>Website</a>':''),{parse_mode:'HTML',disable_web_page_preview:true});});
 bot.command('links',function(ctx){return ctx.reply('<a href=\'https://dexscreener.com/bsc/0xea65ee463ce165442323769d07c4e07ffa1b1ea9\'>Chart</a> | <a href=\'https://pancakeswap.finance/swap?outputCurrency=0xea65ee463ce165442323769d07c4e07ffa1b1ea9\'>PancakeSwap</a>'+(TWITTER?' | <a href=\''+TWITTER+'\'>Twitter</a>':'')+(WEBSITE?' | <a href=\''+WEBSITE+'\'>Website</a>':''),{parse_mode:'HTML',disable_web_page_preview:true});});
-bot.command('info',function(ctx){return ctx.reply('<b>$JUST10</b> \u2014 BNB Smart Chain (BSC)\n\nSupply: 1000000000\nTax: 2% buy / 3% sell\nContract: PENDING\nLP: NOT LOCKED'+(TWITTER?'\nTwitter: '+TWITTER:''),{parse_mode:'HTML',disable_web_page_preview:true});});
+bot.command('info',function(ctx){return ctx.reply('<b>$JUST10</b> \u2014 BNB Smart Chain (BSC)\n\nSupply: 1000000000\nTax: 2% buy / 3% sell\nContract: RENOUNCED\nLP: LOCKED'+(TWITTER?'\nTwitter: '+TWITTER:''),{parse_mode:'HTML',disable_web_page_preview:true});});
 bot.command('shill',async function(ctx){
   var shillMsgs=[
-    'Have you heard about $JUST10?\n\n$JUST10 \u2014 community-owned on BSC.\nRenounced. LP NOT LOCKED. No dev games.\nThis is the quiet move. Load up.',
-    'Looking for a BSC token built by real people?\n\n$JUST10 \u2014 fully community-owned.\nRenounced contract. LP NOT LOCKED. Real narrative.\nGet in early \u261d',
-    'The move others will regret missing.\n\n$JUST10 on BSC \u2014 community takeover.\nRenounced. LP NOT LOCKED. No rug possible.\nLoad up before it runs.',
-    'What if the next gem was right here?\n\n$JUST10 \u2014 zero dev, 100% community.\nRenounced. LP NOT LOCKED. Low cap. Real conviction.',
-    'Don\u2019t sleep on $JUST10.\nCommunity took over. Dev is gone. LP NOT LOCKED.\nThis is what conviction looks like. Load up.',
+    'Have you heard about $JUST10?\n\n$JUST10 \u2014 community-owned on BSC.\nRenounced. LP LOCKED. No dev games.\nThis is the quiet move. Load up.',
+    'Looking for a BSC token built by real people?\n\n$JUST10 \u2014 fully community-owned.\nRenounced contract. LP LOCKED. Real narrative.\nGet in early \u261d',
+    'The move others will regret missing.\n\n$JUST10 on BSC \u2014 community takeover.\nRenounced. LP LOCKED. No rug possible.\nLoad up before it runs.',
+    'What if the next gem was right here?\n\n$JUST10 \u2014 zero dev, 100% community.\nRenounced. LP LOCKED. Low cap. Real conviction.',
+    'Don\u2019t sleep on $JUST10.\nCommunity took over. Dev is gone. LP LOCKED.\nThis is what conviction looks like. Load up.',
   ];
   var base=shillMsgs[Math.floor(Math.random()*shillMsgs.length)];
   var caLine=caUnlocked?'\n\nCA:\n'+CA:'\n\nCA dropping soon.';
