@@ -1,4 +1,4 @@
-// build:1780556975090
+// build:1780559694204
 'use strict';
 var Telegraf=require('telegraf').Telegraf;
 var express=require('express');
@@ -24,7 +24,7 @@ var bot=new Telegraf(BOT_TOKEN);
 var app=express();app.use(express.json());
 var _SF='/tmp/state.json';
 var caUnlocked=true,groupChatId=null,silTimer=null;
-var SIL_DELAY=0;
+var SIL_DELAY=1800000;
 function loadState(){try{var s=JSON.parse(fs.readFileSync(_SF,'utf8'));caUnlocked=!!s.u;groupChatId=s.g||null;}catch(_){}}
 function saveState(){try{fs.writeFileSync(_SF,JSON.stringify({u:caUnlocked,g:groupChatId}));}catch(_){}}
 loadState();
@@ -63,21 +63,20 @@ async function ask(msg){
   throw lastErr||new Error('All Groq keys failed');
 }
 async function smartAsk(msg){var r=await ask(msg);if(lastReplies.includes(r))r=await ask(msg+' Give a completely different response.');lastReplies.push(r);if(lastReplies.length>12)lastReplies.shift();return r;}
-var SIL_ANG=['2-3 lines. Why hold $JUST10 right now.','2-3 lines. $JUST10 fundamentals: renounced, LP locked.','2-3 lines. Being early to $JUST10.','2-3 lines. $JUST10 community is building.','2-3 lines. The move in $JUST10 is still early.'];
+var SIL_ANG=['Ask the $JUST10 community ONE short, fun question to get people talking. Not about price. Keep it casual, 1-2 lines.','Casually greet the group like a friendly community member and ask how everyones day is going. 1-2 lines, warm, no hype.','Say something genuinely warm about the $JUST10 community being active, and invite quiet members to say hi. 1-2 lines.','Ask an open, fun question about crypto or memes in general to spark chatter in the $JUST10 chat. 1-2 lines, no price talk.','Gently encourage the $JUST10 community to share the chart, post a meme, or invite a friend. Friendly, 1-2 lines, no hype words.','Share ONE genuine, conversational reason people like $JUST10, no hype or moon talk, no price predictions. 1-2 lines.','Note that trading has been active for $JUST10 today in a calm, factual way (no specific numbers, no predictions) and ask what the community thinks. 1-2 lines.'];
 var silIdx=0;
+var SIL_ORDER=[0,1,2,3,4,0,1,5,2,3,6,4];
+var silOrderIdx=0;
 async function fireSilence(){if(!groupChatId)return resetSil();
   try{
-    // Delete previous silence breaker first
-    // Previous silence breaker stays  new one adds below it naturally
-    var p=SIL_ANG[silIdx%SIL_ANG.length];silIdx++;
+    var pick=SIL_ORDER[silOrderIdx%SIL_ORDER.length];silOrderIdx++;
+    var p=SIL_ANG[pick];
     var cap=await smartAsk(p);
     if(cap&&cap!=='IGNORE'){
-      // Send with image, store ID separately from CA tracker
       var silM;
       if(IMG_BUF){try{silM=await bot.telegram.sendPhoto(groupChatId,{source:IMG_BUF},{caption:cap,parse_mode:'HTML'});}catch(_){}}
       if(!silM)silM=await bot.telegram.sendMessage(groupChatId,cap,{parse_mode:'HTML'});
       silImgId=silM.message_id;
-      // Pin and notify all
     }
   }catch(e){console.log('Silence breaker error:',e.message);}
   resetSil();
