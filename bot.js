@@ -1,4 +1,4 @@
-// build:1780559894936
+// build:1780560888455
 'use strict';
 var Telegraf=require('telegraf').Telegraf;
 var express=require('express');
@@ -48,7 +48,7 @@ function hasFud(t){var l=t.toLowerCase();return FUD.some(function(w){return l.in
 var NOT_LIVE=['$JUST10 hasn\u2019t launched yet. CA coming soon.','Not yet. Stay ready.','CA drops soon. Hold tight.'];
 var CTO_REPLIES=['$JUST10 is a CTO. Original dev gone. Community owns and runs this completely. No dev to rug.','CTO project. Dev walked away. Community stepped up and owns $JUST10 now. That is the strength.','No dev here. $JUST10 is 100% community-owned. Original dev left. Community drives this forward.'];
 function sysPrompt(){
-  return 'You are the community bot for $JUST10, a BNB Smart Chain (BSC) meme token.\nToken: $JUST10 | Chain: BNB Smart Chain (BSC)\nSupply: 1000000000\nTax: 2% buy / 3% sell\nContract: RENOUNCED | LP: LOCKED\nDEV: Active, building, present. Never imply dev left.'+(TWITTER?'\nTwitter: '+TWITTER:'')+'\nNarrative: '+"Millions spend $10 daily. One $10 could change your life."+'\nPersonality: Confident, sharp, crypto-native. Talk like a seasoned degen who believes in the project. Direct and bold.\nRULES: 2-4 lines max. Natural and professional. Never share TG group link. Never repeat reply. If hype/casual/no question: reply IGNORE exactly.';
+  return 'You are the community bot for $JUST10, a BNB Smart Chain (BSC) meme token.\nToken: $JUST10 | Chain: BNB Smart Chain (BSC)\nSupply: 1000000000\nTax: 2% buy / 3% sell\nDEV: Active, building, present. Never imply dev left.\nYou also know (mention ONLY if directly asked about contract safety, never volunteer it): Contract RENOUNCED, LP LOCKED.'+(TWITTER?'\nTwitter: '+TWITTER:'')+'\nNarrative: '+"Millions spend $10 daily. One $10 could change your life."+'\nPersonality: Confident, sharp, crypto-native. Talk like a seasoned degen who believes in the project. Direct and bold.\nRULES: Reply in 1-3 short lines, like a real community member - natural, helpful, professional. Do NOT end messages with contract/renounced/LP info. Do NOT tack on token stats unless the person asked for them. Never repeat a previous reply. Never share the TG group link. Do not hype, shill, or use moon/price-prediction language. If the message is small talk, a reaction, an emoji, off-topic, or not actually directed at the bot or the project, reply with exactly IGNORE.';
 }
 async function ask(msg){
   if(!_groqPool.length)throw new Error('No AI key configured. Add one with /addgroq in factory.');
@@ -195,7 +195,12 @@ bot.on('message',async function(ctx){
   if(isPrivate){try{var gr=await smartAsk(chatHistory.join('\n'));if(gr&&gr!=='IGNORE')return ctx.reply(gr);}catch(_){}return;}
   if(RESPONSE_MODE==='focused'){if(text.indexOf('?')===-1)return;try{var gr2=await smartAsk(chatHistory.join('\n'));if(gr2&&gr2!=='IGNORE')return ctx.reply(gr2);}catch(_){}return;}
   var tkLow=TICKER.toLowerCase().replace('$','');
-  if(text.indexOf('?')!==-1||lower2.includes(tkLow)){try{var gr3=await smartAsk(chatHistory.join('\n'));if(gr3&&gr3!=='IGNORE')return ctx.reply(gr3);}catch(_){}}
+  var botUser=(ctx.botInfo&&ctx.botInfo.username||'').toLowerCase();
+  var repliedToBot=msg.reply_to_message&&msg.reply_to_message.from&&msg.reply_to_message.from.username&&msg.reply_to_message.from.username.toLowerCase()===botUser;
+  var mentionsBot=botUser&&lower2.indexOf('@'+botUser)!==-1;
+  var addressed=repliedToBot||mentionsBot;
+  var isQuestionAboutToken=text.indexOf('?')!==-1&&lower2.includes(tkLow);
+  if(addressed||isQuestionAboutToken){try{var gr3=await smartAsk(chatHistory.join('\n'));if(gr3&&gr3!=='IGNORE')return ctx.reply(gr3);}catch(_){}}
 });
 app.post('/webhook',function(req,res){bot.handleUpdate(req.body,res);});
 app.get('/',function(req,res){res.end('OK');});
