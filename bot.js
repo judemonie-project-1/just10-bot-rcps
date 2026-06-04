@@ -1,4 +1,4 @@
-// build:1780560888455
+// build:1780562199078
 'use strict';
 var Telegraf=require('telegraf').Telegraf;
 var express=require('express');
@@ -50,20 +50,21 @@ var CTO_REPLIES=['$JUST10 is a CTO. Original dev gone. Community owns and runs t
 function sysPrompt(){
   return 'You are the community bot for $JUST10, a BNB Smart Chain (BSC) meme token.\nToken: $JUST10 | Chain: BNB Smart Chain (BSC)\nSupply: 1000000000\nTax: 2% buy / 3% sell\nDEV: Active, building, present. Never imply dev left.\nYou also know (mention ONLY if directly asked about contract safety, never volunteer it): Contract RENOUNCED, LP LOCKED.'+(TWITTER?'\nTwitter: '+TWITTER:'')+'\nNarrative: '+"Millions spend $10 daily. One $10 could change your life."+'\nPersonality: Confident, sharp, crypto-native. Talk like a seasoned degen who believes in the project. Direct and bold.\nRULES: Reply in 1-3 short lines, like a real community member - natural, helpful, professional. Do NOT end messages with contract/renounced/LP info. Do NOT tack on token stats unless the person asked for them. Never repeat a previous reply. Never share the TG group link. Do not hype, shill, or use moon/price-prediction language. If the message is small talk, a reaction, an emoji, off-topic, or not actually directed at the bot or the project, reply with exactly IGNORE.';
 }
-async function ask(msg){
+async function ask(msg,sys){
   if(!_groqPool.length)throw new Error('No AI key configured. Add one with /addgroq in factory.');
   var lastErr,attempts=_groqPool.length;
   for(var _ai=0;_ai<attempts;_ai++){
     try{
       var _gc=new Groq({apiKey:nextGroqKey()});
-      var r=await _gc.chat.completions.create({model:'llama-3.3-70b-versatile',temperature:1.0,max_tokens:160,messages:[{role:'system',content:sysPrompt()},{role:'user',content:msg}]});
+      var r=await _gc.chat.completions.create({model:'llama-3.3-70b-versatile',temperature:1.0,max_tokens:160,messages:[{role:'system',content:sys||sysPrompt()},{role:'user',content:msg}]});
       return r.choices[0].message.content.trim();
     }catch(e){lastErr=e;console.log('Groq attempt '+(_ai+1)+' failed:',e.message);}
   }
   throw lastErr||new Error('All Groq keys failed');
 }
-async function smartAsk(msg){var r=await ask(msg);if(lastReplies.includes(r))r=await ask(msg+' Give a completely different response.');lastReplies.push(r);if(lastReplies.length>12)lastReplies.shift();return r;}
-var SIL_ANG=['Ask the $JUST10 community ONE short, fun question to get people talking. Not about price. Keep it casual, 1-2 lines.','Casually greet the group like a friendly community member and ask how everyones day is going. 1-2 lines, warm, no hype.','Say something genuinely warm about the $JUST10 community being active, and invite quiet members to say hi. 1-2 lines.','Ask an open, fun question about crypto or memes in general to spark chatter in the $JUST10 chat. 1-2 lines, no price talk.','Gently encourage the $JUST10 community to share the chart, post a meme, or invite a friend. Friendly, 1-2 lines, no hype words.','Share ONE genuine, conversational reason people like $JUST10, no hype or moon talk, no price predictions. 1-2 lines.','Note that trading has been active for $JUST10 today in a calm, factual way (no specific numbers, no predictions) and ask what the community thinks. 1-2 lines.'];
+function chatSys(){return 'You are a friendly, casual member of the $JUST10 Telegram community. When asked to post something, output ONLY the exact message to send to the group - no quotes, no preamble, no explanation, no describing the community. Write like a real person texting: short, lowercase-ish, natural. Never use hype, moon, or price-prediction language. Never mention contract/renounced/LP. 1-2 lines max.';}
+async function smartAsk(msg,sys){var r=await ask(msg,sys);if(lastReplies.includes(r))r=await ask(msg+' Give a completely different response.',sys);lastReplies.push(r);if(lastReplies.length>12)lastReplies.shift();return r;}
+var SIL_ANG=['Write a casual message to post in the group RIGHT NOW to get people talking again. Ask one fun question (not about price). Speak AS a community member talking to the group, do not describe the community. Example tone: "ok real question whats everyones fav meme coin moment this year?" 1-2 lines.','Write a short friendly greeting to post in the group right now, like "gm everyone hows the day going so far?". Speak directly to the group, not about it. 1-2 lines, no hype.','Post a message that invites quiet lurkers to say hi, like "i know theres a bunch of you lurking lol drop a gm". Speak to the group directly. 1-2 lines.','Post one fun open question about crypto or memes to spark chatter, like "whats the first coin you ever aped into?". Speak to the group. 1-2 lines, no price talk.','Post a friendly nudge for people to share a meme or the chart, like "lets see those memes, post em below". Speak to the group directly. 1-2 lines, no hype words.','Post one genuine conversational line about why people vibe with $JUST10, spoken casually to the group, no hype/moon/price-prediction. 1-2 lines.','Post a calm casual line noting the chat has been a bit quiet and asking what everyone is up to, like "bit quiet in here, what is everyone up to today?". Speak to the group. 1-2 lines.'];
 var silIdx=0;
 var SIL_ORDER=[0,1,2,3,4,0,1,5,2,3,6,4];
 var silOrderIdx=0;
@@ -71,8 +72,9 @@ async function fireSilence(){if(!groupChatId)return resetSil();
   try{
     var pick=SIL_ORDER[silOrderIdx%SIL_ORDER.length];silOrderIdx++;
     var p=SIL_ANG[pick];
-    var cap=await smartAsk(p);
+    var cap=await smartAsk(p,chatSys());
     if(cap&&cap!=='IGNORE'){
+      if(silImgId){try{await bot.telegram.deleteMessage(groupChatId,silImgId);}catch(_){}silImgId=null;}
       var silM;
       if(IMG_BUF){try{silM=await bot.telegram.sendPhoto(groupChatId,{source:IMG_BUF},{caption:cap,parse_mode:'HTML'});}catch(_){}}
       if(!silM)silM=await bot.telegram.sendMessage(groupChatId,cap,{parse_mode:'HTML'});
